@@ -8,7 +8,6 @@
 	#include <set>
 	using namespace std;
 
-	extern char* yylval;
 	extern int yylex();
 	extern FILE* yyin;
 
@@ -18,7 +17,13 @@
 	string currentOp = "";
 %}
 
-%token VARIABLE	CONSTANT EQL PLUS MINUS STAR DIV POW LCURL RCURL LPAREN RPAREN COMMA SEMCLN
+%union {
+	char* str;
+}
+
+%token <str>	VARIABLE	CONSTANT
+%token	EQL PLUS MINUS STAR DIV POW LCURL RCURL LPAREN RPAREN COMMA SEMCLN
+%type <str> term
 
 %%
 program: liveVars statements;
@@ -30,7 +35,7 @@ statement:	VARIABLE EQL expression SEMCLN {
 				if (liveVariables.find($1) != liveVariables.end()) {
 					liveVariables.erase($1);
 					for (string var : tempVars) {
-						liveVariables.insert(var);
+						if(isalpha(var[0])) liveVariables.insert(var);
 					}
 					cout<<$1<<" = ";
 					if (tempVars.size() == 1) {
@@ -43,14 +48,16 @@ statement:	VARIABLE EQL expression SEMCLN {
 				tempVars.clear();
 			};
 
-expression:	term {if ($1 != NULL) tempVars.push_back($1);}
+expression:	term {
+				if ($1 != NULL) tempVars.push_back($1);
+				}
 		  | term operator term {
 				if ($1 != NULL)	tempVars.push_back($1);
 				if ($3 != NULL) tempVars.push_back($3);
 			};
 
 term: VARIABLE {$$ = $1;} 
-	|	CONSTANT {$$ = NULL;};
+	|	CONSTANT {$$ = $1;};
 
 operator: PLUS {currentOp = "+";} | MINUS {currentOp = "-";} | STAR {currentOp = "*";} | DIV {currentOp = "/";} | POW {currentOp = "^";};
 
@@ -61,7 +68,7 @@ varList: VARIABLE	{liveVariables.insert($1);}
 	   varList COMMA VARIABLE	{liveVariables.insert($3);};
 
 
-%% // check bottom code
+%%
 
 void yyerror(const char *s) {
   fprintf(stderr, "Error: %s\n", s);

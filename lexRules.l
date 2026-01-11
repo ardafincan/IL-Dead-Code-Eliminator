@@ -3,17 +3,17 @@ letter [A-Za-z]
 %{
 #include <iostream>
 #include <cstdlib>
-extern char* yylval;
+#include "y.tab.h"
 %}
 %%
 
 {letter}({letter}|{digit})*	{
-		yylval = strdup(yytext);
+		yylval.str = strdup(yytext);
 		return VARIABLE;
 		}
 
 -?{digit}+		{
-		yylval = strdup(yytext);
+		yylval.str = strdup(yytext);
 		return CONSTANT;
 		}
 
@@ -32,3 +32,7 @@ extern char* yylval;
 [ \t\n]+	;
 
 %%
+
+int yywrap() {
+	return 1;
+}
